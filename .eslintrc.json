@@ -1,0 +1,14 @@
+{
+	"root": true,
+	"ignorePatterns": ["!**/*"],
+	"overrides": [
+		{
+			"files": ["*.ts", "*.js"],
+			"extends": ["@saritasa/eslint-config-saritasa"],
+			"rules": {
+				"no-tabs": "off",
+				"@typescript-eslint/indent": ["error", "tab"]
+			}
+		}
+	]
+}

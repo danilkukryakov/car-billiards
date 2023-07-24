@@ -1,0 +1,20 @@
+{
+  "name": "car-billiards",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "lint": "eslint src --cache",
+    "lint:fix": "eslint src --cache --fix"
+  },
+  "devDependencies": {
+    "@saritasa/eslint-config-saritasa": "^2.1.4",
+    "eslint": "^8.45.0",
+    "typescript": "^5.0.2",
+    "vite": "^4.4.5",
+    "vite-plugin-checker": "^0.6.1"
+  }
+}
