@@ -23,8 +23,7 @@
 		"noImplicitOverride": true,
 		"noPropertyAccessFromIndexSignature": true,
 		"noImplicitReturns": true,
-		/* Types */
-		"types": ["vite/client"]
+		"baseUrl": "src"
 	},
 	"include": [
 		"src",

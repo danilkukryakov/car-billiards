@@ -9,6 +9,12 @@
 				"no-tabs": "off",
 				"@typescript-eslint/indent": ["error", "tab"]
 			}
+		},
+		{
+			"files": ["*.d.ts"],
+			"rules": {
+				"spaced-comment": "off"
+			}
 		}
 	]
 }

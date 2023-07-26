@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-	"engines": {
+  "engines": {
     "node": "^18.17.0"
   },
   "volta": {
@@ -21,7 +21,8 @@
     "eslint": "^8.45.0",
     "typescript": "^5.0.2",
     "vite": "^4.4.5",
-    "vite-plugin-checker": "^0.6.1"
+    "vite-plugin-checker": "^0.6.1",
+    "vite-tsconfig-paths": "^4.2.0"
   },
   "dependencies": {
     "@babylonjs/core": "^6.13.0"
