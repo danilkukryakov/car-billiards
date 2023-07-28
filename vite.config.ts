@@ -7,6 +7,6 @@ export default defineConfig({
 		checker({ typescript: true }),
 		tsconfigPaths(),
 	],
-	assetsInclude: ['**/*.env'],
+	assetsInclude: ['**/*.env', '**/*.glb'],
 	base: '/car-billiards/',
 });
