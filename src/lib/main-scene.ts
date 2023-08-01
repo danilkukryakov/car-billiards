@@ -1,9 +1,10 @@
 import {
-	AbstractMesh, CubeTexture,
-	Engine, GroundMesh, MeshBuilder,
-	PBRMaterial, Scene, SceneLoader, Texture,
+	Angle, CannonJSPlugin, CubeTexture,
+	Engine, GroundMesh, Mesh, MeshBuilder,
+	PBRMaterial, PhysicsImpostor, Scene, SceneLoader, Texture, Vector3,
 } from '@babylonjs/core';
 import '@babylonjs/loaders';
+import * as CANNON from 'cannon';
 
 import { aoTexturePath, diffuseTexturePath, normalTexturePath, roughnessTexturePath } from 'assets/textures/ground';
 import { environmentTexturePath } from 'assets/environment';
@@ -21,7 +22,7 @@ export class MainScene {
 
 	private groundMesh?: GroundMesh;
 
-	private carMesh?: AbstractMesh;
+	private carCollider?: Mesh;
 
 	public constructor(canvas: HTMLCanvasElement) {
 		this.engine = new Engine(canvas);
@@ -44,9 +45,11 @@ export class MainScene {
 		MainCamera.create(this.scene);
 		MainLight.create(this.scene);
 		this.createSkybox();
+		this.createScenePhysics();
 		this.groundMesh = this.createGround();
 		this.createCar();
 		this.initializeSceneActions();
+		this.createImpostors();
 	}
 
 	private createSkybox(): void {
@@ -62,6 +65,11 @@ export class MainScene {
 		const ground = MeshBuilder.CreateGround('ground', { width: 50, height: 50 }, this.scene);
 		const material = this.createGroundMaterial();
 		ground.material = material;
+		ground.physicsImpostor = new PhysicsImpostor(ground, PhysicsImpostor.BoxImpostor, {
+			mass: 0,
+			restitution: 0,
+		}, this.scene);
+
 		return ground;
 	}
 
@@ -109,14 +117,57 @@ export class MainScene {
 
 	private async createCar(): Promise<void> {
 		const { meshes } = await SceneLoader.ImportMeshAsync('', carModelPath, '', this.scene);
-		this.carMesh = meshes[0];
+		const carMesh = meshes[0];
+		carMesh.rotation = new Vector3(0, Angle.FromDegrees(90).radians(), 0);
+
+		this.carCollider = MeshBuilder.CreateBox('carCollider', {
+			width: 3.5,
+			height: 1,
+			depth: 1.5,
+		});
+		this.carCollider.position.y = 0.5;
+		this.carCollider.visibility = 0.5;
+
+		this.carCollider.physicsImpostor = new PhysicsImpostor(this.carCollider, PhysicsImpostor.BoxImpostor, {
+			mass: 10,
+			restitution: 0,
+			friction: 0,
+		}, this.scene);
+
+		this.carCollider.physicsImpostor.physicsBody.linearDamping = 0.5;
+
+		carMesh.setParent(this.carCollider);
 	}
 
 	private initializeSceneActions(): void {
 		this.scene.onPointerPick = (_event, pickerInfo) => {
-			if (this.carMesh && this.groundMesh === pickerInfo.pickedMesh && pickerInfo.pickedPoint) {
-				this.carMesh.position = pickerInfo.pickedPoint;
+			if (this.carCollider && this.groundMesh === pickerInfo.pickedMesh && pickerInfo.pickedPoint) {
+				const vector = pickerInfo.pickedPoint.subtract(this.carCollider?.position ?? Vector3.Zero());
+				this.carCollider?.physicsImpostor?.setLinearVelocity(vector);
+
+				const angleRadians = -Math.atan2(
+					this.carCollider.position.z - pickerInfo.pickedPoint.z,
+					this.carCollider.position.x - pickerInfo.pickedPoint.x,
+				);
+
+				this.carCollider.rotation = new Vector3(0, angleRadians, 0);
 			}
 		};
+
+	}
+
+	private createScenePhysics(): void {
+		const gravityVector = new Vector3(0, -9.81, 0);
+		this.scene.enablePhysics(gravityVector, new CannonJSPlugin(true, 19, CANNON));
+	}
+
+	private createImpostors(): void {
+		const box = MeshBuilder.CreateBox('box', { size: 5 });
+		box.position = new Vector3(5, 10, 5);
+
+		box.physicsImpostor = new PhysicsImpostor(box, PhysicsImpostor.BoxImpostor, {
+			mass: 5,
+			restitution: 0.5,
+		}, this.scene);
 	}
 }
