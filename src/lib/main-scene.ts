@@ -1,7 +1,7 @@
 import {
 	AbstractMesh, Angle, CannonJSPlugin, CubeTexture,
 	Engine, GroundMesh, Mesh, MeshBuilder, PBRMaterial,
-	PhysicsImpostor, Scene, SceneLoader, Texture, Vector3,
+	PhysicsImpostor, PointerEventTypes, Scene, SceneLoader, Texture, Vector3,
 } from '@babylonjs/core';
 import '@babylonjs/loaders';
 import * as CANNON from 'cannon';
@@ -20,7 +20,7 @@ export class MainScene {
 
 	private readonly scene: Scene;
 
-	private ground?: GroundMesh;
+	private carGround?: GroundMesh;
 
 	private carCollider?: Mesh;
 
@@ -47,6 +47,7 @@ export class MainScene {
 		this.createSkybox();
 		this.createScenePhysics();
 		this.createGround();
+		this.createCarGround();
 		this.createCar();
 		this.initializeSceneActions();
 		this.createBoxImpostor();
@@ -70,7 +71,18 @@ export class MainScene {
 			mass: 0,
 			restitution: 0,
 		}, this.scene);
-		this.ground = ground;
+		ground.isPickable = false;
+	}
+
+	private createCarGround(): void {
+		const carGround = MeshBuilder.CreateGround('carGround', { width: 1000, height: 1000 }, this.scene);
+		carGround.visibility = 0;
+		carGround.physicsImpostor = new PhysicsImpostor(carGround, PhysicsImpostor.BoxImpostor, {
+			mass: 0,
+			restitution: 0,
+		}, this.scene);
+		carGround.physicsImpostor.physicsBody.collisionFilterMask = 2;
+		this.carGround = carGround;
 	}
 
 	private createGroundMaterial(): PBRMaterial {
@@ -140,16 +152,27 @@ export class MainScene {
 
 		carCollider.physicsImpostor.physicsBody.linearDamping = 0.5;
 
+		// eslint-disable-next-line no-bitwise
+		carCollider.physicsImpostor.physicsBody.collisionFilterGroup = 1 | 2;
+
 		carMesh.setParent(carCollider);
 		this.carCollider = carCollider;
 	}
 
 	private initializeSceneActions(): void {
-		this.scene.onPointerPick = (_event, pickerInfo) => {
-			if (this.carCollider && this.ground === pickerInfo.pickedMesh && pickerInfo.pickedPoint) {
-				this.moveCarToPoint(this.carCollider, pickerInfo.pickedPoint);
+		this.scene.onPointerObservable.add(pointerInfo => {
+			const { type, pickInfo } = pointerInfo;
+			if (type === PointerEventTypes.POINTERPICK && pickInfo?.pickedPoint) {
+				const gameAreaSize = 50;
+				const isClickInGameArea = Math.abs(pickInfo.pickedPoint.x) < gameAreaSize &&
+					Math.abs(pickInfo.pickedPoint.z) < gameAreaSize;
+				const isGroundClicked = this.carGround === pickInfo.pickedMesh;
+
+				if (isClickInGameArea && isGroundClicked && this.carCollider) {
+					this.moveCarToPoint(this.carCollider, pickInfo.pickedPoint);
+				}
 			}
-		};
+		});
 	}
 
 	private moveCarToPoint(carMesh: Mesh, pickedPoint: Vector3): void {
@@ -171,21 +194,23 @@ export class MainScene {
 	}
 
 	private createBoxImpostor(): void {
-		const box = MeshBuilder.CreateBox('box', { size: 5 });
-		box.position = new Vector3(5, 2.5, 5);
+		const size = 3;
+		const box = MeshBuilder.CreateBox('box', { size });
+		box.position = new Vector3(5, size / 2, 5);
 
 		box.physicsImpostor = new PhysicsImpostor(box, PhysicsImpostor.BoxImpostor, {
-			mass: 5,
+			mass: 10,
 			restitution: 0.5,
 		}, this.scene);
 	}
 
 	private createSphereImpostor(): void {
-		const sphere = MeshBuilder.CreateSphere('sphere', { diameter: 5 });
-		sphere.position = new Vector3(-5, 2.5, -5);
+		const diameter = 3;
+		const sphere = MeshBuilder.CreateSphere('sphere', { diameter });
+		sphere.position = new Vector3(-5, diameter / 2, -5);
 
 		sphere.physicsImpostor = new PhysicsImpostor(sphere, PhysicsImpostor.SphereImpostor, {
-			mass: 10,
+			mass: 20,
 			restitution: 0,
 		}, this.scene);
 	}
