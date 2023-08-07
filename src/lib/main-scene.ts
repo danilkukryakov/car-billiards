@@ -22,6 +22,8 @@ export class MainScene {
 
 	private carGround?: GroundMesh;
 
+	private objectsDestroyerGround?: GroundMesh;
+
 	private carCollider?: Mesh;
 
 	public constructor(canvas: HTMLCanvasElement) {
@@ -48,6 +50,7 @@ export class MainScene {
 		this.createScenePhysics();
 		this.createGround();
 		this.createCarGround();
+		this.createObjectDestroyerGround();
 		this.createCar();
 		this.initializeSceneActions();
 		this.createBoxImpostor();
@@ -83,6 +86,16 @@ export class MainScene {
 		}, this.scene);
 		carGround.physicsImpostor.physicsBody.collisionFilterMask = 2;
 		this.carGround = carGround;
+	}
+
+	private createObjectDestroyerGround(): void {
+		const ground = MeshBuilder.CreateGround('objectDestroyerGround', { width: 1000, height: 1000 }, this.scene);
+		ground.physicsImpostor = new PhysicsImpostor(ground, PhysicsImpostor.BoxImpostor, {
+			mass: 0,
+		}, this.scene);
+		ground.visibility = 0;
+		ground.position.y = -20;
+		this.objectsDestroyerGround = ground;
 	}
 
 	private createGroundMaterial(): PBRMaterial {
@@ -202,6 +215,8 @@ export class MainScene {
 			mass: 10,
 			restitution: 0.5,
 		}, this.scene);
+
+		this.registerDestroyCollider(box);
 	}
 
 	private createSphereImpostor(): void {
@@ -213,5 +228,15 @@ export class MainScene {
 			mass: 20,
 			restitution: 0,
 		}, this.scene);
+
+		this.registerDestroyCollider(sphere);
+	}
+
+	private registerDestroyCollider(mesh: Mesh): void {
+		if (this.objectsDestroyerGround?.physicsImpostor) {
+			mesh.physicsImpostor?.registerOnPhysicsCollide(this.objectsDestroyerGround.physicsImpostor, () => {
+				mesh.dispose();
+			});
+		}
 	}
 }
