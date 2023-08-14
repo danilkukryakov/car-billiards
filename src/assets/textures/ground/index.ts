@@ -3,7 +3,8 @@ import normalTexturePath from './fabrics_normal.png';
 import aoTexturePath from './fabrics_ao.jpg';
 import roughnessTexturePath from './fabrics_roughness.jpg';
 
-export {
+/** Group textures. */
+export const groundTextures = {
 	diffuseTexturePath,
 	normalTexturePath,
 	aoTexturePath,

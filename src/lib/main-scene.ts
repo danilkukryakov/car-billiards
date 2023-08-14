@@ -1,18 +1,19 @@
 import {
 	AbstractMesh, Angle, CannonJSPlugin, CubeTexture,
-	Engine, GroundMesh, Mesh, MeshBuilder, PBRMaterial,
-	PhysicsImpostor, PointerEventTypes, Scene, SceneLoader,
-	Texture, Vector2, Vector3,
+	Engine, GroundMesh, Material, Mesh, MeshBuilder,
+	PhysicsImpostor, PointerEventTypes, Scene,
+	SceneLoader, Vector2, Vector3,
 } from '@babylonjs/core';
 import '@babylonjs/loaders';
 import * as CANNON from 'cannon';
 
-import { aoTexturePath, diffuseTexturePath, normalTexturePath, roughnessTexturePath } from 'assets/textures/ground';
 import { environmentTexturePath } from 'assets/environment';
 import { carModelPath } from 'assets/models';
 
 import { MainLight } from './main-light';
 import { MainCamera } from './main-camera';
+import { PbrMaterials } from './materials';
+import { getRandomIntInclusive } from './utils';
 
 /** Main scene of the app. */
 export class MainScene {
@@ -68,7 +69,7 @@ export class MainScene {
 
 	private createGround(): void {
 		const ground = MeshBuilder.CreateGround('ground', { width: 50, height: 50 }, this.scene);
-		const material = this.createGroundMaterial();
+		const material = PbrMaterials.createGroundMaterial(this.scene);
 		ground.material = material;
 		ground.physicsImpostor = new PhysicsImpostor(ground, PhysicsImpostor.BoxImpostor, {
 			mass: 0,
@@ -96,48 +97,6 @@ export class MainScene {
 		ground.visibility = 0;
 		ground.position.y = -20;
 		this.objectsDestroyerGround = ground;
-	}
-
-	private createGroundMaterial(): PBRMaterial {
-		const material = new PBRMaterial('pbrGroundMaterial', this.scene);
-		const uvScale = 4;
-		const textures: Texture[] = [];
-
-		const diffuseTexture = new Texture(
-			diffuseTexturePath,
-			this.scene,
-		);
-		textures.push(diffuseTexture);
-		material.albedoTexture = diffuseTexture;
-
-		const aoTexture = new Texture(
-			aoTexturePath,
-			this.scene,
-		);
-		textures.push(aoTexture);
-		material.ambientTexture = aoTexture;
-
-		const normalTexture = new Texture(
-			normalTexturePath,
-			this.scene,
-		);
-		textures.push(normalTexture);
-		material.bumpTexture = normalTexture;
-
-		const metallicTexture = new Texture(
-			roughnessTexturePath,
-			this.scene,
-		);
-		textures.push(metallicTexture);
-		material.metallicTexture = metallicTexture;
-		material.useRoughnessFromMetallicTextureAlpha = true;
-
-		textures.forEach(texture => {
-			texture.uScale = uvScale;
-			texture.vScale = uvScale;
-		});
-
-		return material;
 	}
 
 	private async createCar(): Promise<void> {
@@ -207,20 +166,27 @@ export class MainScene {
 	}
 
 	private createObjects(): void {
-		const objectsCount = this.getRandomIntInclusive(10, 20);
-		const coords = this.getCoordinates(objectsCount);
-		coords.forEach(item => {
-			const isBox = this.getRandomIntInclusive(-1, 1) > 0;
+		const objectsCount = getRandomIntInclusive(10, 20);
+		const coordinates = this.getCoordinates(objectsCount);
+
+		const woodMaterial = PbrMaterials.createWoodMaterial(this.scene);
+		const grainedWoodMaterial = PbrMaterials.createGrainedWoodMaterial(this.scene);
+
+		coordinates.forEach(item => {
+			const isBox = getRandomIntInclusive(-1, 1) > 0;
+			const isGrainedWood = getRandomIntInclusive(-1, 1) > 0;
+			const material = isGrainedWood ? grainedWoodMaterial : woodMaterial;
+
 			if (isBox) {
-				this.createBoxImpostor(item);
+				this.createBoxImpostor(item, material);
 			} else {
-				this.createSphereImpostor(item);
+				this.createSphereImpostor(item, material);
 			}
 		});
 	}
 
-	private createBoxImpostor(position: Vector2): void {
-		const size = this.getRandomIntInclusive(1, 5);
+	private createBoxImpostor(position: Vector2, material?: Material): Mesh {
+		const size = getRandomIntInclusive(1, 5);
 		const box = MeshBuilder.CreateBox('box', { size });
 		box.position = new Vector3(position.x, size / 2, position.y);
 
@@ -229,11 +195,14 @@ export class MainScene {
 			restitution: size / 10,
 		}, this.scene);
 
+		box.material = material ?? null;
+
 		this.registerDestroyCollider(box);
+		return box;
 	}
 
-	private createSphereImpostor(position: Vector2): void {
-		const diameter = this.getRandomIntInclusive(1, 5);
+	private createSphereImpostor(position: Vector2, material?: Material): void {
+		const diameter = getRandomIntInclusive(1, 5);
 		const sphere = MeshBuilder.CreateSphere('sphere', { diameter });
 		sphere.position = new Vector3(position.x, diameter / 2, position.y);
 
@@ -241,6 +210,8 @@ export class MainScene {
 			mass: diameter * 5,
 			restitution: 0,
 		}, this.scene);
+
+		sphere.material = material ?? null;
 
 		this.registerDestroyCollider(sphere);
 	}
@@ -268,13 +239,6 @@ export class MainScene {
 			}
 		}
 
-		return array.sort(() => this.getRandomIntInclusive(-1, 1)).slice(0, count);
-	}
-
-	private getRandomIntInclusive(min: number, max: number): number {
-		// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random
-		const minInt = Math.ceil(min);
-		const maxInt = Math.floor(max);
-		return Math.floor(Math.random() * (maxInt - minInt + 1) + minInt);
+		return array.sort(() => getRandomIntInclusive(-1, 1)).slice(0, count);
 	}
 }
