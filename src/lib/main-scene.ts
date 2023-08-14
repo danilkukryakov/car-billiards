@@ -1,7 +1,8 @@
 import {
 	AbstractMesh, Angle, CannonJSPlugin, CubeTexture,
 	Engine, GroundMesh, Mesh, MeshBuilder, PBRMaterial,
-	PhysicsImpostor, PointerEventTypes, Scene, SceneLoader, Texture, Vector3,
+	PhysicsImpostor, PointerEventTypes, Scene, SceneLoader,
+	Texture, Vector2, Vector3,
 } from '@babylonjs/core';
 import '@babylonjs/loaders';
 import * as CANNON from 'cannon';
@@ -53,8 +54,7 @@ export class MainScene {
 		this.createObjectDestroyerGround();
 		this.createCar();
 		this.initializeSceneActions();
-		this.createBoxImpostor();
-		this.createSphereImpostor();
+		this.createObjects();
 	}
 
 	private createSkybox(): void {
@@ -206,26 +206,39 @@ export class MainScene {
 		this.scene.enablePhysics(gravityVector, new CannonJSPlugin(true, 10, CANNON));
 	}
 
-	private createBoxImpostor(): void {
-		const size = 3;
+	private createObjects(): void {
+		const objectsCount = this.getRandomIntInclusive(10, 20);
+		const coords = this.getCoordinates(objectsCount);
+		coords.forEach(item => {
+			const isBox = this.getRandomIntInclusive(-1, 1) > 0;
+			if (isBox) {
+				this.createBoxImpostor(item);
+			} else {
+				this.createSphereImpostor(item);
+			}
+		});
+	}
+
+	private createBoxImpostor(position: Vector2): void {
+		const size = this.getRandomIntInclusive(1, 5);
 		const box = MeshBuilder.CreateBox('box', { size });
-		box.position = new Vector3(5, size / 2, 5);
+		box.position = new Vector3(position.x, size / 2, position.y);
 
 		box.physicsImpostor = new PhysicsImpostor(box, PhysicsImpostor.BoxImpostor, {
-			mass: 10,
-			restitution: 0.5,
+			mass: size * 2,
+			restitution: size / 10,
 		}, this.scene);
 
 		this.registerDestroyCollider(box);
 	}
 
-	private createSphereImpostor(): void {
-		const diameter = 3;
+	private createSphereImpostor(position: Vector2): void {
+		const diameter = this.getRandomIntInclusive(1, 5);
 		const sphere = MeshBuilder.CreateSphere('sphere', { diameter });
-		sphere.position = new Vector3(-5, diameter / 2, -5);
+		sphere.position = new Vector3(position.x, diameter / 2, position.y);
 
 		sphere.physicsImpostor = new PhysicsImpostor(sphere, PhysicsImpostor.SphereImpostor, {
-			mass: 20,
+			mass: diameter * 5,
 			restitution: 0,
 		}, this.scene);
 
@@ -238,5 +251,30 @@ export class MainScene {
 				mesh.dispose();
 			});
 		}
+	}
+
+	private getCoordinates(count: number): Vector2[] {
+		const array: Vector2[] = [];
+		const playerSafeZoneOffset = 5;
+		const tileSize = 5;
+		const upperBorder = 25;
+
+		for (let x = playerSafeZoneOffset; x < upperBorder; x += tileSize) {
+			for (let y = playerSafeZoneOffset; y < upperBorder; y += tileSize) {
+				array.push(new Vector2(x, y));
+				array.push(new Vector2(x, -y));
+				array.push(new Vector2(-x, y));
+				array.push(new Vector2(-x, -y));
+			}
+		}
+
+		return array.sort(() => this.getRandomIntInclusive(-1, 1)).slice(0, count);
+	}
+
+	private getRandomIntInclusive(min: number, max: number): number {
+		// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random
+		const minInt = Math.ceil(min);
+		const maxInt = Math.floor(max);
+		return Math.floor(Math.random() * (maxInt - minInt + 1) + minInt);
 	}
 }
