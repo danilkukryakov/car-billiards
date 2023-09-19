@@ -22,7 +22,8 @@
 			"rules": {
 				"no-tabs": "off",
 				"@typescript-eslint/indent": ["error", "tab"],
-				"@typescript-eslint/naming-convention": "off"
+				"@typescript-eslint/naming-convention": "off",
+				"react/prop-types": "off"
 			}
 		}
 	]
