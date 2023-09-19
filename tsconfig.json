@@ -8,6 +8,7 @@
 			"DOM",
 			"DOM.Iterable"
 		],
+		"jsx": "react-jsx",
 		"skipLibCheck": true,
 		/* Bundler mode */
 		"moduleResolution": "bundler",
@@ -21,7 +22,7 @@
 		"noUnusedParameters": true,
 		"noFallthroughCasesInSwitch": true,
 		"noImplicitOverride": true,
-		"noPropertyAccessFromIndexSignature": true,
+		"noUncheckedIndexedAccess": true,
 		"noImplicitReturns": true,
 		"baseUrl": "src"
 	},

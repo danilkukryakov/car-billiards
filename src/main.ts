@@ -1,9 +1,3 @@
-import './style.css';
-import { MainScene } from './lib';
+import { startReactApp } from 'app';
 
-const canvasElement = document.querySelector<HTMLCanvasElement>('#canvas');
-if (canvasElement === null) {
-	throw new Error('Canvas element is missing.');
-}
-
-new MainScene(canvasElement).render();
+startReactApp();

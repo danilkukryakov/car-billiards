@@ -15,6 +15,15 @@
 			"rules": {
 				"spaced-comment": "off"
 			}
+		},
+		{
+			"files": ["*.tsx"],
+			"extends": ["@saritasa/eslint-config-saritasa", "plugin:react/recommended", "plugin:react/jsx-runtime"],
+			"rules": {
+				"no-tabs": "off",
+				"@typescript-eslint/indent": ["error", "tab"],
+				"@typescript-eslint/naming-convention": "off"
+			}
 		}
 	]
 }

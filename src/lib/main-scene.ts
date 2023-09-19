@@ -31,10 +31,7 @@ export class MainScene {
 	public constructor(canvas: HTMLCanvasElement) {
 		this.engine = new Engine(canvas);
 		this.scene = new Scene(this.engine);
-	}
 
-	/** Render the scene. */
-	public render(): void {
 		this.initializeScene();
 		this.engine.runRenderLoop(() => this.scene.render());
 	}
@@ -102,9 +99,10 @@ export class MainScene {
 	private async createCar(): Promise<void> {
 		const { meshes } = await SceneLoader.ImportMeshAsync('', carModelPath, '', this.scene);
 		const carMesh = meshes[0];
-		carMesh.rotation = new Vector3(0, Angle.FromDegrees(90).radians(), 0);
-
-		this.createCarCollider(carMesh);
+		if (carMesh != null) {
+			carMesh.rotation = new Vector3(0, Angle.FromDegrees(90).radians(), 0);
+			this.createCarCollider(carMesh);
+		}
 	}
 
 	private createCarCollider(carMesh: AbstractMesh): void {
