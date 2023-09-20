@@ -1,10 +1,8 @@
 import { memo, useState } from 'react';
 import { Button, Card, CardContent, Stack, Typography } from '@mui/material';
-import { GameSettings } from 'app/models/game-settings';
+import { DEFAULT_SETTINGS, GameSettings, MAX_ITEMS_COUNT } from 'lib/models/game-settings';
 
 import { SliderControl } from './components';
-
-const MAX_ITEMS_COUNT = 50;
 
 interface GameFormProps {
 
@@ -15,10 +13,7 @@ interface GameFormProps {
 const GameFormComponent: React.FC<GameFormProps> = ({
 	onGameStart,
 }) => {
-	const [gameSettings, setGameSettings] = useState<GameSettings>({
-		cubesCount: MAX_ITEMS_COUNT / 2,
-		spheresCount: MAX_ITEMS_COUNT / 2,
-	});
+	const [gameSettings, setGameSettings] = useState(DEFAULT_SETTINGS);
 
 	const patchFormSettings = (values: Partial<GameSettings>): void => {
 		setGameSettings({

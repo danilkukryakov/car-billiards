@@ -1,8 +1,8 @@
 import { useRef, useEffect } from 'react';
 import { MainScene } from 'lib';
+import { GameSettings } from 'lib/models/game-settings';
 
 import { GameForm } from './components/GameForm';
-import { GameSettings } from './models/game-settings';
 
 import styles from './App.module.css';
 
@@ -20,9 +20,10 @@ export const App: React.FC = () => {
 	}, []);
 
 	const handleGameStart = (settings: GameSettings): void => {
-		// TODO: Implement game restart with applied settings.
-		// eslint-disable-next-line no-console
-		console.log(settings);
+		scene.current?.erase();
+		if (canvasRef.current != null) {
+			scene.current = new MainScene(canvasRef.current, settings);
+		}
 	};
 
 	return (

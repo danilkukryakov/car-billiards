@@ -1,8 +1,8 @@
 import {
 	AbstractMesh, Angle, CannonJSPlugin, CubeTexture,
-	Engine, GroundMesh, Material, Mesh, MeshBuilder,
+	Engine, GroundMesh, Mesh, MeshBuilder,
 	PhysicsImpostor, PointerEventTypes, Scene,
-	SceneLoader, Vector2, Vector3,
+	SceneLoader, Vector3,
 } from '@babylonjs/core';
 import '@babylonjs/loaders';
 import * as CANNON from 'cannon';
@@ -13,7 +13,8 @@ import { carModelPath } from 'assets/models';
 import { MainLight } from './main-light';
 import { MainCamera } from './main-camera';
 import { PbrMaterials } from './materials';
-import { getRandomIntInclusive } from './utils';
+import { DEFAULT_SETTINGS, GameSettings } from './models/game-settings';
+import { ObjectsCreator } from './objects-creator';
 
 /** Main scene of the app. */
 export class MainScene {
@@ -24,15 +25,13 @@ export class MainScene {
 
 	private carGround?: GroundMesh;
 
-	private objectsDestroyerGround?: GroundMesh;
-
 	private carCollider?: Mesh;
 
-	public constructor(canvas: HTMLCanvasElement) {
+	public constructor(canvas: HTMLCanvasElement, gameSettings = DEFAULT_SETTINGS) {
 		this.engine = new Engine(canvas);
 		this.scene = new Scene(this.engine);
 
-		this.initializeScene();
+		this.initializeScene(gameSettings);
 		this.engine.runRenderLoop(() => this.scene.render());
 	}
 
@@ -42,17 +41,17 @@ export class MainScene {
 		this.engine.dispose();
 	}
 
-	private initializeScene(): void {
+	private initializeScene(settings: GameSettings): void {
 		MainCamera.create(this.scene);
 		MainLight.create(this.scene);
 		this.createSkybox();
 		this.createScenePhysics();
 		this.createGround();
 		this.createCarGround();
-		this.createObjectDestroyerGround();
 		this.createCar();
 		this.initializeSceneActions();
-		this.createObjects();
+		const objectsCreator = new ObjectsCreator(this.scene);
+		objectsCreator.createObjects(settings);
 	}
 
 	private createSkybox(): void {
@@ -65,7 +64,8 @@ export class MainScene {
 	}
 
 	private createGround(): void {
-		const ground = MeshBuilder.CreateGround('ground', { width: 50, height: 50 }, this.scene);
+		const groundSize = 50;
+		const ground = MeshBuilder.CreateGround('ground', { width: groundSize, height: groundSize }, this.scene);
 		const material = PbrMaterials.createGroundMaterial(this.scene);
 		ground.material = material;
 		ground.physicsImpostor = new PhysicsImpostor(ground, PhysicsImpostor.BoxImpostor, {
@@ -76,7 +76,8 @@ export class MainScene {
 	}
 
 	private createCarGround(): void {
-		const carGround = MeshBuilder.CreateGround('carGround', { width: 1000, height: 1000 }, this.scene);
+		const groundSize = 1000;
+		const carGround = MeshBuilder.CreateGround('carGround', { width: groundSize, height: groundSize }, this.scene);
 		carGround.visibility = 0;
 		carGround.physicsImpostor = new PhysicsImpostor(carGround, PhysicsImpostor.BoxImpostor, {
 			mass: 0,
@@ -84,16 +85,6 @@ export class MainScene {
 		}, this.scene);
 		carGround.physicsImpostor.physicsBody.collisionFilterMask = 2;
 		this.carGround = carGround;
-	}
-
-	private createObjectDestroyerGround(): void {
-		const ground = MeshBuilder.CreateGround('objectDestroyerGround', { width: 1000, height: 1000 }, this.scene);
-		ground.physicsImpostor = new PhysicsImpostor(ground, PhysicsImpostor.BoxImpostor, {
-			mass: 0,
-		}, this.scene);
-		ground.visibility = 0;
-		ground.position.y = -20;
-		this.objectsDestroyerGround = ground;
 	}
 
 	private async createCar(): Promise<void> {
@@ -161,82 +152,5 @@ export class MainScene {
 		const gravityConstant = -9.81;
 		const gravityVector = new Vector3(0, gravityConstant, 0);
 		this.scene.enablePhysics(gravityVector, new CannonJSPlugin(true, 10, CANNON));
-	}
-
-	private createObjects(): void {
-		const objectsCount = getRandomIntInclusive(10, 20);
-		const coordinates = this.getCoordinates(objectsCount);
-
-		const woodMaterial = PbrMaterials.createWoodMaterial(this.scene);
-		const grainedWoodMaterial = PbrMaterials.createGrainedWoodMaterial(this.scene);
-
-		coordinates.forEach(item => {
-			const isBox = getRandomIntInclusive(-1, 1) > 0;
-			const isGrainedWood = getRandomIntInclusive(-1, 1) > 0;
-			const material = isGrainedWood ? grainedWoodMaterial : woodMaterial;
-
-			if (isBox) {
-				this.createBoxImpostor(item, material);
-			} else {
-				this.createSphereImpostor(item, material);
-			}
-		});
-	}
-
-	private createBoxImpostor(position: Vector2, material?: Material): Mesh {
-		const size = getRandomIntInclusive(1, 5);
-		const box = MeshBuilder.CreateBox('box', { size });
-		box.position = new Vector3(position.x, size / 2, position.y);
-
-		box.physicsImpostor = new PhysicsImpostor(box, PhysicsImpostor.BoxImpostor, {
-			mass: size * 2,
-			restitution: size / 10,
-		}, this.scene);
-
-		box.material = material ?? null;
-
-		this.registerDestroyCollider(box);
-		return box;
-	}
-
-	private createSphereImpostor(position: Vector2, material?: Material): void {
-		const diameter = getRandomIntInclusive(1, 5);
-		const sphere = MeshBuilder.CreateSphere('sphere', { diameter });
-		sphere.position = new Vector3(position.x, diameter / 2, position.y);
-
-		sphere.physicsImpostor = new PhysicsImpostor(sphere, PhysicsImpostor.SphereImpostor, {
-			mass: diameter * 5,
-			restitution: 0,
-		}, this.scene);
-
-		sphere.material = material ?? null;
-
-		this.registerDestroyCollider(sphere);
-	}
-
-	private registerDestroyCollider(mesh: Mesh): void {
-		if (this.objectsDestroyerGround?.physicsImpostor) {
-			mesh.physicsImpostor?.registerOnPhysicsCollide(this.objectsDestroyerGround.physicsImpostor, () => {
-				mesh.dispose();
-			});
-		}
-	}
-
-	private getCoordinates(count: number): Vector2[] {
-		const array: Vector2[] = [];
-		const playerSafeZoneOffset = 5;
-		const tileSize = 5;
-		const upperBorder = 25;
-
-		for (let x = playerSafeZoneOffset; x < upperBorder; x += tileSize) {
-			for (let y = playerSafeZoneOffset; y < upperBorder; y += tileSize) {
-				array.push(new Vector2(x, y));
-				array.push(new Vector2(x, -y));
-				array.push(new Vector2(-x, y));
-				array.push(new Vector2(-x, -y));
-			}
-		}
-
-		return array.sort(() => getRandomIntInclusive(-1, 1)).slice(0, count);
 	}
 }
