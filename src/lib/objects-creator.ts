@@ -20,15 +20,15 @@ export class ObjectsCreator {
 	 * Create game object.
 	 * @param settings Game settings.
 	 */
-	public createObjects(settings: GameSettings): void {
+	public initializeObjects(settings: GameSettings): void {
 		const objectsCount = settings.cubesCount + settings.spheresCount;
 		const coordinates = this.getCoordinates(objectsCount);
 
-		this.createCubes(coordinates.splice(0, settings.cubesCount));
-		this.createSpheres(coordinates.slice(0, settings.spheresCount));
+		this.initializeCubes(coordinates.splice(0, settings.cubesCount));
+		this.initializeSpheres(coordinates.slice(0, settings.spheresCount));
 	}
 
-	private createCubes(coordinates: readonly Vector2[]): void {
+	private initializeCubes(coordinates: readonly Vector2[]): void {
 		const woodMaterial = PbrMaterials.createWoodMaterial(this.scene);
 
 		coordinates.forEach(coord => {
@@ -37,7 +37,7 @@ export class ObjectsCreator {
 		});
 	}
 
-	private createSpheres(coordinates: readonly Vector2[]): void {
+	private initializeSpheres(coordinates: readonly Vector2[]): void {
 		const grainedWoodMaterial = PbrMaterials.createGrainedWoodMaterial(this.scene);
 
 		coordinates.map(coord => {
@@ -78,16 +78,23 @@ export class ObjectsCreator {
 
 	private getCoordinates(count: number): Vector2[] {
 		const array: Vector2[] = [];
-		const playerSafeZoneOffset = 5;
 		const tileSize = 5;
+		const playerSafeZoneOffset = (tileSize / 2) + 1;
 		const upperBorder = 25;
 
-		for (let x = playerSafeZoneOffset; x < upperBorder; x += tileSize) {
-			for (let y = playerSafeZoneOffset; y < upperBorder; y += tileSize) {
+		for (let x = 0; x < upperBorder; x += tileSize) {
+			for (let y = 0; y < upperBorder; y += tileSize) {
+				if (Math.abs(x) <= playerSafeZoneOffset && Math.abs(y) <= playerSafeZoneOffset) {
+					continue;
+				}
+
 				array.push(new Vector2(x, y));
-				array.push(new Vector2(x, -y));
-				array.push(new Vector2(-x, y));
 				array.push(new Vector2(-x, -y));
+
+				if (x !== 0 && y !== 0) {
+					array.push(new Vector2(-x, y));
+					array.push(new Vector2(x, -y));
+				}
 			}
 		}
 
